@@ -7,7 +7,7 @@ class TestScan_zonefile(TestCase):
         try:
             th2 = 500
             start2 = time.time()
-            cnt2 = scan_zonefile(num_threads=th2, zone_file='com.zone.43656')
+            cnt2 = scan_zonefile(num_threads=th2, zone_file='com.zone.43656', num_skip=10000)
             end2 = time.time()
         finally:
             print_api_providers()

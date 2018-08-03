@@ -73,8 +73,9 @@ def scan_zonefile(num_threads, zone_file, max_domains=sys.maxsize, num_skip=0):
                     if last_domain != domain:
                         cnt += 1
                         last_domain = domain
-                        sem.acquire(blocking=True)
-                        pool.apply_async(scan_dc_record, (dc, domain, sem,))
+                        if num_skip == 0 or cnt % num_skip == 0:
+                            sem.acquire(blocking=True)
+                            pool.apply_async(scan_dc_record, (dc, domain, sem,))
                 if cnt >= max_domains:
                     pool.close()
                     pool.join()
