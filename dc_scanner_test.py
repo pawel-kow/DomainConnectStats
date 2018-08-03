@@ -7,6 +7,7 @@ from dns.resolver import Resolver
 import time
 import validators
 import sys
+import pickle
 
 _resolver = Resolver()
 _resolver.timeout = 5
@@ -148,12 +149,22 @@ def get_ns_core(dc, ns):
 
 
 def print_api_providers():
-    global line
     for line in api_url_map.keys():
         print("API: {}, Provider: {}, Cnt: {}, NS: {}"
               .format(line, api_url_map[line].config.providerName,
                       api_url_map[line].cnt, ', '.join(api_url_map[line].nslist.keys())))
 
+
+def dump_api_providers(filename):
+    with api_url_map_lck:
+        with open(filename, 'wb') as output:
+            pickle.dump(obj=api_url_map, file=output)
+
+def load_api_providers(filename):
+    global api_url_map
+    with api_url_map_lck:
+        with open(filename, 'rb') as input:
+            api_url_map = pickle.load(input)
 
 if __name__ == '__main__':
     th2 = 10

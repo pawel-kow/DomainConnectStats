@@ -11,8 +11,13 @@ class TestScan_zonefile(TestCase):
             end2 = time.time()
         finally:
             print_api_providers()
+            dump_api_providers('dump.pckl')
 
         print("*****")
         print("{}: {}, {}, {}/domain".format(th2, end2 - start2, cnt2, float(end2 - start2) / float(cnt2)))
         print("*****")
+
+    def test_load_api_providers(self):
+        load_api_providers('dump.pckl')
+        print_api_providers()
 
