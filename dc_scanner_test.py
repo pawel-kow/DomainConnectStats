@@ -9,8 +9,8 @@ import validators
 import sys
 
 _resolver = Resolver()
-_resolver.timeout = 10
-_resolver.lifetime = 10
+_resolver.timeout = 5
+_resolver.lifetime = 30
 
 api_url_map = dict()
 api_url_map_lck = Lock()
@@ -39,8 +39,8 @@ api_url_map['None'].config.ProviderName = 'None'
 
 def scan_threaded(num_threads, label0):
     dc = DomainConnect()
-    dc._resolver.timeout = 10
-    dc._resolver.lifetime = 10
+    dc._resolver.timeout = 5
+    dc._resolver.lifetime = 30
     cnt = 0
     with ThreadPool(processes=num_threads) as pool:
         for label1 in ['a', 'b']:  # ascii_lowercase:
