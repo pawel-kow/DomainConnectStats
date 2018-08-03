@@ -77,9 +77,10 @@ def scan_zonefile(num_threads, zone_file, max_domains=sys.maxsize, num_skip=0):
                             sem.acquire(blocking=True)
                             pool.apply_async(scan_dc_record, (dc, domain, sem,))
                 if cnt >= max_domains:
-                    pool.close()
-                    pool.join()
-                    return cnt
+                    break
+    pool.close()
+    pool.join()
+    return int(cnt / num_skip) if num_skip != 0 else cnt
 
 
 def identify_nameservers(dom):
