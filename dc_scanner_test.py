@@ -10,8 +10,8 @@ import sys
 import pickle
 
 _resolver = Resolver()
-_resolver.timeout = 5
-_resolver.lifetime = 30
+_resolver.timeout = 10
+_resolver.lifetime = 120
 
 api_url_map = dict()
 api_url_map_lck = Lock()
@@ -40,8 +40,8 @@ api_url_map['None'].config.ProviderName = 'None'
 
 def scan_threaded(num_threads, label0):
     dc = DomainConnect()
-    dc._resolver.timeout = 5
-    dc._resolver.lifetime = 30
+    dc._resolver.timeout = _resolver.timeout
+    dc._resolver.lifetime = _resolver.lifetime
     cnt = 0
     with ThreadPool(processes=num_threads) as pool:
         for label1 in ['a', 'b']:  # ascii_lowercase:
@@ -58,8 +58,8 @@ def scan_threaded(num_threads, label0):
 
 def scan_zonefile(num_threads, zone_file, max_domains=sys.maxsize, num_skip=0):
     dc = DomainConnect()
-    dc._resolver.timeout = 5
-    dc._resolver.lifetime = 5
+    dc._resolver.timeout = _resolver.timeout
+    dc._resolver.lifetime = _resolver.lifetime
 
     sem = Semaphore(num_threads * 2)
 
