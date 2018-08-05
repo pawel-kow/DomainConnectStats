@@ -10,7 +10,7 @@ import sys
 import pickle
 
 _resolver = Resolver()
-_resolver.timeout = 10
+_resolver.timeout = 15
 _resolver.lifetime = 120
 
 api_url_map = dict()
@@ -56,7 +56,7 @@ def scan_threaded(num_threads, label0):
     return cnt
 
 
-def scan_zonefile(num_threads, zone_file, max_domains=sys.maxsize, num_skip=0):
+def scan_zonefile(num_threads, zone_file, max_domains=sys.maxsize, num_skip=0, skip_first=0):
     dc = DomainConnect()
     dc._resolver.timeout = _resolver.timeout
     dc._resolver.lifetime = _resolver.lifetime
@@ -64,6 +64,7 @@ def scan_zonefile(num_threads, zone_file, max_domains=sys.maxsize, num_skip=0):
     sem = Semaphore(num_threads * 2)
 
     cnt = 0
+    real_cnt = 0
     last_domain = ''
     with ThreadPool(processes=num_threads) as pool:
         with open(zone_file) as f:
@@ -74,14 +75,16 @@ def scan_zonefile(num_threads, zone_file, max_domains=sys.maxsize, num_skip=0):
                     if last_domain != domain:
                         cnt += 1
                         last_domain = domain
-                        if num_skip == 0 or cnt % num_skip == 0:
+                        if cnt > skip_first and \
+                            (num_skip == 0 or cnt % num_skip == 0):
+                            real_cnt += 1
                             sem.acquire(blocking=True)
                             pool.apply_async(scan_dc_record, (dc, domain, sem,))
-                if cnt >= max_domains:
+                if real_cnt >= max_domains:
                     break
-    pool.close()
-    pool.join()
-    return int(cnt / num_skip) if num_skip != 0 else cnt
+        pool.close()
+        pool.join()
+    return real_cnt
 
 
 def identify_nameservers(dom):
