@@ -166,7 +166,7 @@ def scan_dc_record(dc, dom, sem):
                 if stats is None:
                     stats = dns_provider_stats(
                         api_url,
-                        get_domain_config(dc=dc, domain=dom, domain_connect_api=api_url_orig)
+                        get_domain_config(dc=dc, domain_root=dom, domain_connect_api=api_url_orig)
                         if not api_url.startswith('None')
                         else get_none_config(api_url))
                     api_url_map[api_url] = stats

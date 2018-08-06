@@ -5,9 +5,9 @@ from dc_scanner_test import *
 class TestScan_zonefile(TestCase):
     def test_scan_zonefile(self):
         try:
-            th2 = 200
+            th2 = 250
             start2 = time.time()
-            cnt2 = scan_zonefile(num_threads=th2, zone_file='com.zone.43656', max_domains=10000)
+            cnt2 = scan_zonefile(num_threads=th2, zone_file='com.zone.43656')
             end2 = time.time()
         finally:
             print_api_providers()
@@ -24,3 +24,8 @@ class TestScan_zonefile(TestCase):
     def test_identify(self):
         api_url = identify_domain_connect_api('connect.domains')
         assert api_url == 'api.domainconnect.1and1.com'
+
+    def test_scan(self):
+        dc = DomainConnect()
+        scan_dc_record(dc, 'connect.domains', Semaphore(10))
+        assert 'https://api.domainconnect.1and1.com' in api_url_map
