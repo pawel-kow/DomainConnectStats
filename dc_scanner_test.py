@@ -3,6 +3,7 @@ from string import ascii_lowercase
 from multiprocessing.pool import ThreadPool
 from threading import Lock, Semaphore
 from dns.resolver import Resolver
+from dns.name import EmptyLabel
 
 import time
 import validators
@@ -32,10 +33,11 @@ class dns_provider_stats:
         self.nslist = dict()
 
 
-api_url_map['None'] = dns_provider_stats(api_url='None',
-                                         config=DomainConnectConfig(domain='dummy.local', domain_root='dummy.local',
-                                                                    host='', config=dict()))
-api_url_map['None'].config.ProviderName = 'None'
+def get_none_config(none_name):
+    config = DomainConnectConfig(domain='dummy.local', domain_root='dummy.local',
+                                 host='', config=dict())
+    config.ProviderName = none_name
+    return config
 
 
 def scan_threaded(num_threads, label0):
@@ -94,8 +96,50 @@ def identify_nameservers(dom):
     except:
         return []
 
+def get_domain_config(dc, domain_root, domain_connect_api):
+    """
+    :param dc: DomainConnect object
+    :type dc: DomainConnect
+    :param domain_root: domain name
+    :type domain_root: str
+    :param domain_connect_api: url of domain connect apis
+    :type domain_connect_api: str
+    """
+    ret = dc._get_domain_config_for_root(domain_root, domain_connect_api)
+    return DomainConnectConfig(domain_root, domain_root, '', ret)
 
-def scan_dc_record(dc: DomainConnect, dom, sem):
+def identify_domain_connect_api(domain_root):
+    # noinspection PyBroadException
+    try:
+        dns = _resolver.query('_domainconnect.{}'.format(domain_root), 'TXT')
+        for resp in dns:
+            api_url_resp = str(resp).replace('"', '')
+            api_url = 'https://{}'.format(api_url_resp)
+            if validators.url(api_url):
+                logger.debug('Domain Connect API {} for {} found.'.format(api_url_resp, domain_root))
+                return api_url_resp
+        return 'None: No valid URL in answers'
+    except Timeout:
+        logger.debug('Timeout. Failed to find Domain Connect API for "{}"'.format(domain_root))
+        return 'None: Timeout'
+    except NXDOMAIN or YXDOMAIN:
+        logger.debug('Failed to resolve "{}"'.format(domain_root))
+        return 'None: NXDOMAIN or YXDOMAIN'
+    except NoAnswer:
+        logger.debug('No Domain Connect API found for "{}"'.format(domain_root))
+        return 'None: NoAnswer'
+    except NoNameservers:
+        logger.debug('No nameservers avalaible for "{}"'.format(domain_root))
+        return 'None: NoNameservers'
+    except EmptyLabel:
+        logger.debug('A DNS label is empty for "{}"'.format(domain_root))
+        return 'None: EmptyLabel'
+    except Exception as e:
+        logger.debug('Exception for resolving "{}": {}'.format(domain_root, e))
+        return 'None: Exception {}'.format(e)
+
+
+def scan_dc_record(dc, dom, sem):
     """
     :param dc: DomainConnect object
     :type dc: DomainConnect
@@ -104,31 +148,34 @@ def scan_dc_record(dc: DomainConnect, dom, sem):
     """
     try:
         try:
-            try:
-                api_url = dc._identify_domain_connect_api(dom)
-                api_url = 'https://{}'.format(api_url)
+            api_url_orig = identify_domain_connect_api(dom)
+            if not api_url_orig.startswith('None'):
+                api_url = 'https://{}'.format(api_url_orig)
                 if validators.url(api_url):
                     # print("{}: {}".format(dom, api_url))
                     pass
                 else:
-                    api_url = 'None'
+                    api_url = 'None: Invalid URL'
                     # raise InvalidDomainConnectSettingsException("Invalid URL: {}".format(api_url))
-            except NoDomainConnectRecordException:
-                api_url = 'None'
-
+            else:
+                api_url = api_url_orig
             stats = None
 
             with api_url_map_lck:
                 stats = api_url_map.get(api_url)
                 if stats is None:
-                    stats = dns_provider_stats(api_url, dc.get_domain_config(domain=dom))
+                    stats = dns_provider_stats(
+                        api_url,
+                        get_domain_config(dc=dc, domain=dom, domain_connect_api=api_url_orig)
+                        if not api_url.startswith('None')
+                        else get_none_config(api_url))
                     api_url_map[api_url] = stats
                 stats.cnt += 1
-                if (api_url != 'None' and stats.cnt % 25 == 0) \
-                        or (api_url == 'None' and stats.cnt % 250 == 0):
+                if (not api_url.startswith('None') and stats.cnt % 25 == 0) \
+                        or (api_url.startswith('None') and stats.cnt % 250 == 0):
                     print('{}: {}'.format(api_url, stats.cnt))
 
-            if api_url != 'None':
+            if not api_url.startswith('None'):
                 nslist = identify_nameservers(dom)
                 with api_url_map_lck:
                     for ns in nslist:
