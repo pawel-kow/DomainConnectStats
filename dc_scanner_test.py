@@ -173,7 +173,10 @@ def scan_dc_record(dc, dom, sem):
                 stats.cnt += 1
                 if (not api_url.startswith('None') and stats.cnt % 25 == 0) \
                         or (api_url.startswith('None') and stats.cnt % 250 == 0):
-                    print('{}: {}'.format(api_url, stats.cnt))
+                    total_cnt = 0
+                    for statitem in api_url_map.values():
+                        total_cnt += statitem.cnt
+                    print('[{}] {}: {}'.format(total_cnt, api_url, stats.cnt))
 
             if not api_url.startswith('None'):
                 nslist = identify_nameservers(dom)
