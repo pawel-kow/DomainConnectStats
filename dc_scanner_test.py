@@ -60,7 +60,19 @@ def scan_threaded(num_threads, label0):
     return cnt
 
 
-def scan_zonefile(num_threads, zone_file, max_domains=sys.maxsize, num_skip=0, skip_first=0):
+def scan_zonefile(num_threads, zone_file, max_domains=sys.maxsize, num_skip=0, skip_first=0, dump_filename=None,
+                  dump_frequency=0):
+    """
+
+    :type num_threads: int
+    :type zone_file: str
+    :type max_domains: int
+    :type num_skip: int
+    :type skip_first: int
+    :type dump_filename: str
+    :type dump_frequency: int
+    :return: int
+    """
     start = time.time()
     dc = DomainConnect()
     dc._resolver.timeout = _resolver.timeout
@@ -85,6 +97,9 @@ def scan_zonefile(num_threads, zone_file, max_domains=sys.maxsize, num_skip=0, s
                             real_cnt += 1
                             sem.acquire(blocking=True)
                             pool.apply_async(scan_dc_record, (dc, domain, sem,))
+                            if dump_filename is not None and dump_frequency !=0 and real_cnt % dump_frequency == 0:
+                                filename = dump_filename.format(cnt=real_cnt)
+                                dump_api_providers(filename)
                 if real_cnt >= max_domains:
                     break
         pool.close()

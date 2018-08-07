@@ -7,18 +7,18 @@ class TestScan_zonefile(TestCase):
         try:
             th2 = 250
             start2 = time.time()
-            cnt2 = scan_zonefile(num_threads=th2, zone_file='com.zone.43656')
+            cnt2 = scan_zonefile(num_threads=th2, zone_file='com.zone.43656', dump_filename='output/dump_full_{cnt}.pckl', dump_frequency=1000)
             end2 = time.time()
         finally:
             print_api_providers()
-            dump_api_providers('dump_full2.pckl')
+            dump_api_providers('dump_full_finished.pckl')
 
         print("*****")
         print("{}: {}, {}, {}/domain".format(th2, end2 - start2, cnt2, float(end2 - start2) / float(cnt2)))
         print("*****")
 
     def test_load_api_providers(self):
-        load_api_providers('dump_full2.pckl')
+        load_api_providers('dump_full_2300.pckl')
         print_api_providers()
 
     def test_identify(self):
