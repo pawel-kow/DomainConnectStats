@@ -4,6 +4,7 @@ from multiprocessing.pool import ThreadPool
 from threading import Lock, Semaphore
 from dns.resolver import Resolver
 from dns.name import EmptyLabel
+import humanize
 
 import time
 import validators
@@ -20,6 +21,7 @@ api_url_map_lck = Lock()
 ns_map = dict()
 ns_map_lck = Lock()
 
+start = time.time()
 
 class dns_provider_stats:
     api_url = None
@@ -59,6 +61,7 @@ def scan_threaded(num_threads, label0):
 
 
 def scan_zonefile(num_threads, zone_file, max_domains=sys.maxsize, num_skip=0, skip_first=0):
+    start = time.time()
     dc = DomainConnect()
     dc._resolver.timeout = _resolver.timeout
     dc._resolver.lifetime = _resolver.lifetime
@@ -173,7 +176,10 @@ def scan_dc_record(dc, dom, sem):
                 stats.cnt += 1
                 if (not api_url.startswith('None') and stats.cnt % 25 == 0) \
                         or (api_url.startswith('None') and stats.cnt % 250 == 0):
-                    print('{}: {}'.format(api_url, stats.cnt))
+                    total_cnt = 0
+                    for statitem in api_url_map.values():
+                        total_cnt += statitem.cnt
+                    print('[{:>9d} / {}] {}: {} ({:.2%})'.format(total_cnt, humanize.naturaldelta(time.time() - start), api_url, stats.cnt, float(stats.cnt) / total_cnt))
 
             if not api_url.startswith('None'):
                 nslist = identify_nameservers(dom)
