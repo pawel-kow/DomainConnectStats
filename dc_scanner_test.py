@@ -28,11 +28,14 @@ class dns_provider_stats:
     config = None
     cnt = 0
     nslist = None  # type: dict
+    example_domain = None
+    supported_templates = []
 
-    def __init__(self, api_url, config):
+    def __init__(self, api_url, config, example_domain):
         self.api_url = api_url
         self.config = config
         self.nslist = dict()
+        self.example_domain = example_domain
 
 
 def get_none_config(none_name):
@@ -186,7 +189,8 @@ def scan_dc_record(dc, dom, sem):
                         api_url,
                         get_domain_config(dc=dc, domain_root=dom, domain_connect_api=api_url_orig)
                         if not api_url.startswith('None')
-                        else get_none_config(api_url))
+                        else get_none_config(api_url),
+                        dom)
                     api_url_map[api_url] = stats
                 stats.cnt += 1
                 if (not api_url.startswith('None') and stats.cnt % 25 == 0) \
@@ -220,10 +224,14 @@ def get_ns_core(dc, ns):
 
 
 def print_api_providers():
+    print('API,Provider,Example domain,Count,Nameserver')
     for line in api_url_map.keys():
-        print("API: {}, Provider: {}, Cnt: {}, NS: {}"
-              .format(line, api_url_map[line].config.providerName,
-                      api_url_map[line].cnt, ', '.join(api_url_map[line].nslist.keys())))
+        print("{},{},{},{},{}"
+              .format(line, api_url_map[line].config.providerName, api_url_map[line].example_domain,
+                      api_url_map[line].cnt, 
+                      ';'.join('{}:{}'.format(x[0], x[1]) for x in sorted(api_url_map[line].nslist.items(), key=lambda k:k[1], reverse=True))
+             ))
+#', '.join(api_url_map[line].nslist.keys())))
 
 
 def dump_api_providers(filename):

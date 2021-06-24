@@ -7,7 +7,7 @@ class TestScan_zonefile(TestCase):
         try:
             th2 = 250
             start2 = time.time()
-            cnt2 = scan_zonefile(num_threads=th2, zone_file='com.zone.43656', dump_filename='output/dump_full_{cnt}.pckl', dump_frequency=1000)
+            cnt2 = scan_zonefile(num_threads=th2, zone_file='com.zone.44481', dump_filename='output_Jun2021/dump_full_{cnt}.pckl', dump_frequency=100000)
             end2 = time.time()
         finally:
             print_api_providers()
@@ -18,7 +18,7 @@ class TestScan_zonefile(TestCase):
         print("*****")
 
     def test_load_api_providers(self):
-        load_api_providers('dump_full_2300.pckl')
+        load_api_providers('output_Jun2021/dump_full_1400000.pckl')
         print_api_providers()
 
     def test_identify(self):
