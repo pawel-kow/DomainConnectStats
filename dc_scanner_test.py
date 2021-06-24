@@ -251,7 +251,7 @@ def add_api_providers_templates(dc, templates):
     :type dc: DomainConnect
     """
     for line in api_url_map.keys():
-        if api_url_map[line].config.providerName == "1&1 IONOS":
+        if api_url_map[line].config.providerName == "1&1 IONOS" or True:
             api_url_map[line].supported_templates = []
             print('Checking {}'.format(line))
             for templ in templates:
