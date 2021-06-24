@@ -1,13 +1,16 @@
+import os
 from unittest import TestCase
 from dc_scanner_test import *
 
 
 class TestScan_zonefile(TestCase):
+    folder_prefix = 'output_Jun2021'
+
     def test_scan_zonefile(self):
         try:
             th2 = 250
             start2 = time.time()
-            cnt2 = scan_zonefile(num_threads=th2, zone_file='com.zone.44481', dump_filename='output_Jun2021/dump_full_{cnt}.pckl', dump_frequency=100000)
+            cnt2 = scan_zonefile(num_threads=th2, zone_file='com.zone.44481', dump_filename=os.path.join(TestScan_zonefile.folder_prefix, 'dump_full_{cnt}.pckl'), dump_frequency=100000)
             end2 = time.time()
         finally:
             print_api_providers()
@@ -18,8 +21,21 @@ class TestScan_zonefile(TestCase):
         print("*****")
 
     def test_load_api_providers(self):
-        load_api_providers('output_Jun2021/dump_full_1400000.pckl')
+        load_api_providers(os.path.join(TestScan_zonefile.folder_prefix, 'dump_full_1400000.pckl'))
         print_api_providers()
+
+    def test_scan_supported_templates(self):
+        load_api_providers(os.path.join(TestScan_zonefile.folder_prefix, 'dump_full_2700000.pckl'))
+        dc = DomainConnect()
+        templ = load_templates()
+        add_api_providers_templates(dc, templ)
+        print_api_providers(templ)
+        dump_api_providers(os.path.join(TestScan_zonefile.folder_prefix, 'dump_full_2700000_with_templates.pckl'))
+
+    def test_loadtemplates(self):
+        templ = load_templates()
+        assert len(templ) > 0
+        print(templ)
 
     def test_identify(self):
         api_url = identify_domain_connect_api('connect.domains')

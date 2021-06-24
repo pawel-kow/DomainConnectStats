@@ -1,0 +1,3 @@
+[submodule "Templates"]
+	path = Templates
+	url = git@github.com:Domain-Connect/Templates.git

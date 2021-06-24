@@ -5,6 +5,8 @@ from threading import Lock, Semaphore
 from dns.resolver import Resolver
 from dns.name import EmptyLabel
 import humanize
+import json
+import os
 
 import time
 import validators
@@ -24,19 +26,13 @@ ns_map_lck = Lock()
 start = time.time()
 
 class dns_provider_stats:
-    api_url = None
-    config = None
-    cnt = 0
-    nslist = None  # type: dict
-    example_domain = None
-    supported_templates = []
-
     def __init__(self, api_url, config, example_domain):
+        self.cnt = 0
         self.api_url = api_url
         self.config = config
         self.nslist = dict()
         self.example_domain = example_domain
-
+        self.supported_templates = []
 
 def get_none_config(none_name):
     config = DomainConnectConfig(domain='dummy.local', domain_root='dummy.local',
@@ -223,16 +219,50 @@ def get_ns_core(dc, ns):
     return '.'.join(ns_expl)
 
 
-def print_api_providers():
-    print('API,Provider,Example domain,Count,Nameserver')
+def print_api_providers(templates=[]):
+    print('API,Provider,Example domain,Count,Nameserver,{}'.format(','.join('{}/{}'.format(x[0], x[1]) for x in templates)))
     for line in api_url_map.keys():
-        print("{},{},{},{},{}"
+        print("{},{},{},{},{},{}"
               .format(line, api_url_map[line].config.providerName, api_url_map[line].example_domain,
                       api_url_map[line].cnt, 
-                      ';'.join('{}:{}'.format(x[0], x[1]) for x in sorted(api_url_map[line].nslist.items(), key=lambda k:k[1], reverse=True))
+                      ';'.join('{}:{}'.format(x[0], x[1]) for x in sorted(api_url_map[line].nslist.items(), key=lambda k:k[1], reverse=True)),
+                      ','.join(
+                          'X' if hasattr(api_url_map[line], 'supported_templates')
+                                 and templ in list(api_url_map[line].supported_templates)
+                          else ''
+                          for templ in templates
+                      )
              ))
 #', '.join(api_url_map[line].nslist.keys())))
 
+def load_templates():
+    templates = []
+    dir = os.path.join(os.curdir, 'Templates')
+    for template_file in [r for r in os.listdir(dir) if r.endswith('.json')]:
+        with open(os.path.join(dir, template_file)) as f:
+            template_json = json.load(f)
+            templates += [(template_json['providerId'], template_json['serviceId'])]
+    return templates
+
+
+def add_api_providers_templates(dc, templates):
+    """
+    :param dc: DomainConnect object
+    :type dc: DomainConnect
+    """
+    for line in api_url_map.keys():
+        if api_url_map[line].config.providerName == "1&1 IONOS":
+            api_url_map[line].supported_templates = []
+            print('Checking {}'.format(line))
+            for templ in templates:
+                try:
+                    print('  Checking: {}'.format(templ))
+                    dc.check_template_supported(api_url_map[line].config, templ[0], templ[1])
+                    print('    OK')
+                    api_url_map[line].supported_templates += [templ]
+                except TemplateNotSupportedException:
+                    print('    NOK')
+            print('Provider: {}, Templates: {}'.format(api_url_map[line].config.providerName, api_url_map[line].supported_templates))
 
 def dump_api_providers(filename):
     with api_url_map_lck:
