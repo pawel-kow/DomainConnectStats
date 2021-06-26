@@ -88,7 +88,8 @@ def scan_zonefile(num_threads, zone_file, max_domains=sys.maxsize, num_skip=0, s
                 segments = line.replace('\t', ' ').replace('\n', '').split(sep=' ')
                 if (len(segments) == 3 and segments[1].lower() == 'ns') \
 			or (len(segments) == 5 and segments[3].lower() == 'ns'):
-                    domain = '{}.com'.format(segments[0].lower())
+                    domain = segments[0].lower()
+                    domain = domain.rstrip('.') if domain.endswith('.') else '{}.com'.format(segments[0].lower())
                     if last_domain != domain:
                         cnt += 1
                         last_domain = domain
