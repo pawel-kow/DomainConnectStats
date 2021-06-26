@@ -10,7 +10,7 @@ class TestScan_zonefile(TestCase):
         try:
             th2 = 250
             start2 = time.time()
-            cnt2 = scan_zonefile(num_threads=th2, zone_file='com.zone.44481', dump_filename=os.path.join(TestScan_zonefile.folder_prefix, 'dump_full_{cnt}.pckl'), dump_frequency=100000)
+            cnt2 = scan_zonefile(num_threads=th2, zone_file='com.zone.46162', dump_filename=os.path.join(TestScan_zonefile.folder_prefix, 'dump_full_{cnt}.pckl'), dump_frequency=100000)
             end2 = time.time()
         finally:
             print_api_providers()
