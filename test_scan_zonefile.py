@@ -4,13 +4,14 @@ from dc_scanner_test import *
 
 
 class TestScan_zonefile(TestCase):
-    folder_prefix = 'output_Jun2021'
+    folder_prefix = 'output_Apr2022'
+    scan_file = 'first_scan_dump_full_2100000.pckl'
 
     def test_scan_zonefile(self):
         try:
             th2 = 250
             start2 = time.time()
-            cnt2 = scan_zonefile(num_threads=th2, zone_file='com.zone.46162', dump_filename=os.path.join(TestScan_zonefile.folder_prefix, 'dump_full_{cnt}.pckl'), dump_frequency=100000)
+            cnt2 = scan_zonefile(num_threads=th2, zone_file='com.txt.1651190422', dump_filename=os.path.join(TestScan_zonefile.folder_prefix, 'dump_full_{cnt}.pckl'), dump_frequency=100000)
             end2 = time.time()
         finally:
             print_api_providers()
@@ -21,16 +22,20 @@ class TestScan_zonefile(TestCase):
         print("*****")
 
     def test_load_api_providers(self):
-        load_api_providers(os.path.join(TestScan_zonefile.folder_prefix, 'dump_full_1400000.pckl'))
+        load_api_providers(os.path.join(TestScan_zonefile.folder_prefix, TestScan_zonefile.scan_file))
         print_api_providers()
 
     def test_scan_supported_templates(self):
-        load_api_providers(os.path.join(TestScan_zonefile.folder_prefix, 'dump_full_2700000.pckl'))
+        print("Loading...")
+        load_api_providers(os.path.join(TestScan_zonefile.folder_prefix, TestScan_zonefile.scan_file))
+        print("  Loaded")
         dc = DomainConnect()
         templ = load_templates()
+        print("Started a scan")
         add_api_providers_templates(dc, templ)
+        print("  Scan finished")        
         print_api_providers(templ)
-        dump_api_providers(os.path.join(TestScan_zonefile.folder_prefix, 'dump_full_2700000_with_templates.pckl'))
+        dump_api_providers(os.path.join(TestScan_zonefile.folder_prefix, TestScan_zonefile.scan_file))
 
     def test_loadtemplates(self):
         templ = load_templates()
