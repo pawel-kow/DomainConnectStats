@@ -247,24 +247,39 @@ def load_templates():
     return templates
 
 
-def add_api_providers_templates(dc, templates):
+def add_api_providers_templates(dc, templates, num_threads=20):
     """
     :param dc: DomainConnect object
     :type dc: DomainConnect
     """
-    for line in api_url_map.keys():
-        if api_url_map[line].config.providerName != "Plesk":
-            api_url_map[line].supported_templates = []
-            print('Checking {}'.format(line))
-            for templ in templates:
-                try:
-                    print('  Checking: {}'.format(templ))
-                    dc.check_template_supported(api_url_map[line].config, templ[0], templ[1])
-                    print('    OK')
-                    api_url_map[line].supported_templates += [templ]
-                except TemplateNotSupportedException:
-                    print('    NOK')
-            print('Provider: {}, Templates: {}'.format(api_url_map[line].config.providerName, api_url_map[line].supported_templates))
+    with ThreadPool(processes=num_threads) as pool:
+        providercounter = dict()
+        for line in api_url_map.keys():
+            name = api_url_map[line].config.providerName
+            if name not in providercounter:
+                providercounter[name] = 1
+            else:
+                providercounter[name] += 1
+            if providercounter[name] < 5:
+                api_url_map[line].supported_templates = []
+                pool.apply_async(add_api_providers_templates_for_one, (dc, line, templates))
+        pool.close()
+        pool.join()
+
+
+def add_api_providers_templates_for_one(dc, line, templates):
+    print('Checking {}'.format(line))
+    for templ in templates:
+        try:
+            #print('  Checking: {}'.format(templ))
+            dc.check_template_supported(api_url_map[line].config, templ[0], templ[1])
+            print(f'    {api_url_map[line].config.providerName}:\t{templ[0]}\t{templ[1]}\tOK')
+            api_url_map[line].supported_templates += [templ]
+        except TemplateNotSupportedException:
+            print(f'    {api_url_map[line].config.providerName}:\t{templ[0]}\t{templ[1]}\tNOK')
+    print('Provider: {}, Templates: {}'.format(api_url_map[line].config.providerName,
+                                               api_url_map[line].supported_templates))
+
 
 def dump_api_providers(filename):
     with api_url_map_lck:
