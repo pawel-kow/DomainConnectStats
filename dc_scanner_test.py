@@ -260,7 +260,7 @@ def add_api_providers_templates(dc, templates, num_threads=20):
                 providercounter[name] = 1
             else:
                 providercounter[name] += 1
-            if providercounter[name] < 5:
+            if providercounter[name] < 5 or api_url_map[line].cnt > 100:
                 api_url_map[line].supported_templates = []
                 pool.apply_async(add_api_providers_templates_for_one, (dc, line, templates))
         pool.close()
@@ -268,15 +268,18 @@ def add_api_providers_templates(dc, templates, num_threads=20):
 
 
 def add_api_providers_templates_for_one(dc, line, templates):
+    if api_url_map[line].config.providerName in ['None', None]:
+        print('Skipping empty provider: {}', api_url_map[line].config)
+        return
     print('Checking {}'.format(line))
     for templ in templates:
         try:
             #print('  Checking: {}'.format(templ))
             dc.check_template_supported(api_url_map[line].config, templ[0], templ[1])
-            print(f'    {api_url_map[line].config.providerName}:\t{templ[0]}\t{templ[1]}\tOK')
+            print('    {}:\t{}\t{}\tOK'.format(api_url_map[line].config.providerName, templ[0], templ[1]))
             api_url_map[line].supported_templates += [templ]
         except TemplateNotSupportedException:
-            print(f'    {api_url_map[line].config.providerName}:\t{templ[0]}\t{templ[1]}\tNOK')
+            print('    {}:\t{}\t{}\tNOK'.format(api_url_map[line].config.providerName, templ[0], templ[1]))
     print('Provider: {}, Templates: {}'.format(api_url_map[line].config.providerName,
                                                api_url_map[line].supported_templates))
 
