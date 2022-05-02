@@ -5,6 +5,8 @@ from threading import Lock, Semaphore
 from dns.resolver import Resolver
 from dns.name import EmptyLabel
 import humanize
+import json
+import os
 
 import time
 import validators
@@ -24,16 +26,13 @@ ns_map_lck = Lock()
 start = time.time()
 
 class dns_provider_stats:
-    api_url = None
-    config = None
-    cnt = 0
-    nslist = None  # type: dict
-
-    def __init__(self, api_url, config):
+    def __init__(self, api_url, config, example_domain):
+        self.cnt = 0
         self.api_url = api_url
         self.config = config
         self.nslist = dict()
-
+        self.example_domain = example_domain
+        self.supported_templates = []
 
 def get_none_config(none_name):
     config = DomainConnectConfig(domain='dummy.local', domain_root='dummy.local',
@@ -60,7 +59,19 @@ def scan_threaded(num_threads, label0):
     return cnt
 
 
-def scan_zonefile(num_threads, zone_file, max_domains=sys.maxsize, num_skip=0, skip_first=0):
+def scan_zonefile(num_threads, zone_file, max_domains=sys.maxsize, num_skip=0, skip_first=0, dump_filename=None,
+                  dump_frequency=0):
+    """
+
+    :type num_threads: int
+    :type zone_file: str
+    :type max_domains: int
+    :type num_skip: int
+    :type skip_first: int
+    :type dump_filename: str
+    :type dump_frequency: int
+    :return: int
+    """
     start = time.time()
     dc = DomainConnect()
     dc._resolver.timeout = _resolver.timeout
@@ -74,9 +85,11 @@ def scan_zonefile(num_threads, zone_file, max_domains=sys.maxsize, num_skip=0, s
     with ThreadPool(processes=num_threads) as pool:
         with open(zone_file) as f:
             for line in f:
-                segments = line.split(sep=' ')
-                if len(segments) == 3 and segments[1] == 'NS':
-                    domain = '{}.com'.format(segments[0].lower())
+                segments = line.replace('\t', ' ').replace('\n', '').split(sep=' ')
+                if (len(segments) == 3 and segments[1].lower() == 'ns') \
+			or (len(segments) == 5 and segments[3].lower() == 'ns'):
+                    domain = segments[0].lower()
+                    domain = domain.rstrip('.') if domain.endswith('.') else '{}.com'.format(segments[0].lower())
                     if last_domain != domain:
                         cnt += 1
                         last_domain = domain
@@ -85,6 +98,9 @@ def scan_zonefile(num_threads, zone_file, max_domains=sys.maxsize, num_skip=0, s
                             real_cnt += 1
                             sem.acquire(blocking=True)
                             pool.apply_async(scan_dc_record, (dc, domain, sem,))
+                            if dump_filename is not None and dump_frequency !=0 and real_cnt % dump_frequency == 0:
+                                filename = dump_filename.format(cnt=real_cnt)
+                                dump_api_providers(filename)
                 if real_cnt >= max_domains:
                     break
         pool.close()
@@ -171,7 +187,8 @@ def scan_dc_record(dc, dom, sem):
                         api_url,
                         get_domain_config(dc=dc, domain_root=dom, domain_connect_api=api_url_orig)
                         if not api_url.startswith('None')
-                        else get_none_config(api_url))
+                        else get_none_config(api_url),
+                        dom)
                     api_url_map[api_url] = stats
                 stats.cnt += 1
                 if (not api_url.startswith('None') and stats.cnt % 25 == 0) \
@@ -204,12 +221,50 @@ def get_ns_core(dc, ns):
     return '.'.join(ns_expl)
 
 
-def print_api_providers():
+def print_api_providers(templates=[]):
+    print('API,Provider,Example domain,Count,Nameserver,{}'.format(','.join('{}/{}'.format(x[0], x[1]) for x in templates)))
     for line in api_url_map.keys():
-        print("API: {}, Provider: {}, Cnt: {}, NS: {}"
-              .format(line, api_url_map[line].config.providerName,
-                      api_url_map[line].cnt, ', '.join(api_url_map[line].nslist.keys())))
+        print("{},{},{},{},{},{}"
+              .format(line, api_url_map[line].config.providerName, api_url_map[line].example_domain,
+                      api_url_map[line].cnt, 
+                      ';'.join('{}:{}'.format(x[0], x[1]) for x in sorted(api_url_map[line].nslist.items(), key=lambda k:k[1], reverse=True)),
+                      ','.join(
+                          'X' if hasattr(api_url_map[line], 'supported_templates')
+                                 and templ in list(api_url_map[line].supported_templates)
+                          else ''
+                          for templ in templates
+                      )
+             ))
+#', '.join(api_url_map[line].nslist.keys())))
 
+def load_templates():
+    templates = []
+    dir = os.path.join(os.curdir, 'Templates')
+    for template_file in [r for r in os.listdir(dir) if r.endswith('.json')]:
+        with open(os.path.join(dir, template_file)) as f:
+            template_json = json.load(f)
+            templates += [(template_json['providerId'], template_json['serviceId'])]
+    return templates
+
+
+def add_api_providers_templates(dc, templates):
+    """
+    :param dc: DomainConnect object
+    :type dc: DomainConnect
+    """
+    for line in api_url_map.keys():
+        if api_url_map[line].config.providerName != "Plesk":
+            api_url_map[line].supported_templates = []
+            print('Checking {}'.format(line))
+            for templ in templates:
+                try:
+                    print('  Checking: {}'.format(templ))
+                    dc.check_template_supported(api_url_map[line].config, templ[0], templ[1])
+                    print('    OK')
+                    api_url_map[line].supported_templates += [templ]
+                except TemplateNotSupportedException:
+                    print('    NOK')
+            print('Provider: {}, Templates: {}'.format(api_url_map[line].config.providerName, api_url_map[line].supported_templates))
 
 def dump_api_providers(filename):
     with api_url_map_lck:
