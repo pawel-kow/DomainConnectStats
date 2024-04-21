@@ -1,3 +1,6 @@
 [submodule "Templates"]
 	path = Templates
 	url = git@github.com:Domain-Connect/Templates.git
+[submodule "czds-api-client-python"]
+	path = czds-api-client-python
+	url = https://github.com/icann/czds-api-client-python.git

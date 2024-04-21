@@ -4,14 +4,16 @@ from dc_scanner_test import *
 
 
 class TestScan_zonefile(TestCase):
-    folder_prefix = 'output_Apr2022'
-    scan_file = 'first_scan_dump_full_2100000.pckl'
+#    folder_prefix = 'output_Feb2024'
+    folder_prefix = 'output_Jul2023'
+    scan_file = 'save_final_dump_full_159000000.pckl'
+    zone_file = 'zonefiles/com.txt.gz'
 
     def test_scan_zonefile(self):
         try:
             th2 = 250
             start2 = time.time()
-            cnt2 = scan_zonefile(num_threads=th2, zone_file='com.txt.1651190422', dump_filename=os.path.join(TestScan_zonefile.folder_prefix, 'dump_full_{cnt}.pckl'), dump_frequency=100000)
+            cnt2 = scan_zonefile(num_threads=th2, zone_file=TestScan_zonefile.zone_file, dump_filename=os.path.join(TestScan_zonefile.folder_prefix, 'dump_full_{cnt}.pckl'), dump_frequency=100000)
             end2 = time.time()
         finally:
             print_api_providers()

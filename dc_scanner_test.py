@@ -7,6 +7,7 @@ from dns.name import EmptyLabel
 import humanize
 import json
 import os
+import gzip
 
 import time
 import validators
@@ -82,10 +83,11 @@ def scan_zonefile(num_threads, zone_file, max_domains=sys.maxsize, num_skip=0, s
     cnt = 0
     real_cnt = 0
     last_domain = ''
+    print("*** Start ***")
     with ThreadPool(processes=num_threads) as pool:
-        with open(zone_file) as f:
+        with gzip.open(zone_file) as f:
             for line in f:
-                segments = line.replace('\t', ' ').replace('\n', '').split(sep=' ')
+                segments = line.decode().replace('\t', ' ').replace('\n', '').split(sep=' ')
                 if (len(segments) == 3 and segments[1].lower() == 'ns') \
 			or (len(segments) == 5 and segments[3].lower() == 'ns'):
                     domain = segments[0].lower()
