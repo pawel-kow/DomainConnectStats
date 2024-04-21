@@ -14,9 +14,15 @@ import validators
 import sys
 import pickle
 
+import socket
+
+connection_timeout = 10
+socket.setdefaulttimeout(connection_timeout)
+
 _resolver = Resolver()
-_resolver.timeout = 15
-_resolver.lifetime = 120
+_resolver.timeout = 5
+_resolver.lifetime = 10
+_resolver.retry_servfail = True
 
 api_url_map = dict()
 api_url_map_lck = Lock()
