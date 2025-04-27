@@ -1,12 +1,46 @@
 # DomainConnectStats
 Domain Connect adoption statistics generator
 
+## Installation
+
+Download the repository and submodules
+```
+git clone git@github.com:pawel-kow/DomainConnectStats.git
+cd DomainConnectStats/
+git submodule init && git submodule update
+```
+
+Update the templates
+```
+cd Templates/
+git pull origin master
+cd ..
+```
+
+Create python virtual env and activate it
+```
+python3 -m venv .venv
+. .venv/bin/activate
+```
+
+Restore packages
+```
+pip install -r requirements.txt
+```
+
+## Download zone files
+
+- configure zone access in your ICANN account
+- go to subfolder [./czds-api-client-python](./czds-api-client-python)
+- follow [README](./czds-api-client-python/README.md) and configure your ```config.json```
+  - set up `"working.directory": "../"`
+- execute `python3 download.py`
+
 ## Running a scan:
-- Create an output folder and adjust `folder_prefix”`in `test_scan_zonefile.py` accordingly
-- Copy and unpack a .com zone file
-- adjust line 14 of `test_scan_zonefile.py` to reflect the right file
-- run `screen python -m unittest test_scan_zonefile.TestScan_zonefile.test_scan_zonefile`
+- Create an output folder `mkdir -p output/<scan_folder_name>`
+- run `screen python ./scanner_cmd.py scan_zonefile --zone_file zonefiles/com.txt.gz --folder_prefix output/<scan_folder_name>`
 This will scan the zone and output an intermediate file every 100.000 domains scanned
+
 ## Scan template support:
 - Adjust `scan_file` in `test_scan_zonefile.py` to reflect the filename of an output file (final or intermediate)
 - run `python -u -m unittest test_scan_zonefile.TestScan_zonefile.test_scan_supported_templates > domainconnect_with_templates.txt`
