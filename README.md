@@ -37,8 +37,9 @@ pip install -r requirements.txt
 - execute `python3 download.py`
 
 ## Running a scan:
-- Create an output folder `mkdir -p output/<scan_folder_name>`
-- run `screen python ./scanner_cmd.py scan_zonefile --zone_file zonefiles/com.txt.gz --folder_prefix output/<scan_folder_name>`
+- Set folder name as environment variable `SCANFOLDER="output_Apr2025"`
+- Create an output folder `mkdir -p output/$SCANFOLDER`
+- run `screen python -u ./scanner_cmd.py scan_zonefile --zone_file zonefiles/com.txt.gz --folder_prefix output/$SCANFOLDER | tee logs/log_$SCANFOLDER_$(date +%Y%m%d_%H%M).log`
 This will scan the zone and output an intermediate file every 100.000 domains scanned
 
 ## Scan template support:
