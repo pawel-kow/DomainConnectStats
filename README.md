@@ -28,6 +28,11 @@ Restore packages
 pip install -r requirements.txt
 ```
 
+Configure ulimit
+```
+ulimit -n 64000
+```
+
 ## Download zone files
 
 - configure zone access in your ICANN account
@@ -39,6 +44,13 @@ pip install -r requirements.txt
 ## Running a scan:
 - run `screen -dmS dc_scan_$(date +%b%Y) ./runscanner.sh output_$(date +%b%Y)`
 This will scan the zone and output an intermediate file every 100.000 domains scanned. Logs are in `./logs` directory.
+
+### Monitoring a scan
+```
+$ ps aux | grep python | grep scanner
+$ screen -dmS monitor ./monitor_fds.sh <pid>
+$ screen -dmS status ./top_api_logs.sh ./logs/<logfile>
+```
 
 ## Scan template support:
 - Adjust `scan_file` in `test_scan_zonefile.py` to reflect the filename of an output file (final or intermediate)
