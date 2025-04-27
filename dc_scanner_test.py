@@ -3,6 +3,7 @@ from string import ascii_lowercase
 from multiprocessing.pool import ThreadPool
 from threading import Lock, Semaphore
 from dns.resolver import Resolver
+from dns.nameserver import Do53Nameserver
 from dns.name import EmptyLabel
 import humanize
 import json
@@ -20,9 +21,16 @@ connection_timeout = 10
 socket.setdefaulttimeout(connection_timeout)
 
 _resolver = Resolver()
-_resolver.timeout = 5
-_resolver.lifetime = 10
+_resolver.timeout = 2
+_resolver.lifetime = 5
 _resolver.retry_servfail = True
+_resolver.nameservers = [
+	Do53Nameserver("9.9.9.10"), # Quad9 'insecure'
+	Do53Nameserver("1.1.1.1"), # Cloudflare
+	Do53Nameserver("1.0.0.1"), # Cloudflare
+	Do53Nameserver("8.8.8.8"), # Google
+	Do53Nameserver("8.8.4.4"), # Google
+]
 
 api_url_map = dict()
 api_url_map_lck = Lock()
