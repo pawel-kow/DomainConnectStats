@@ -46,7 +46,7 @@ while true; do
   # ([0-9.]+ \(.*%\)) : Capture group 2: The absolute count (digits, maybe dot) followed by space and "(percentage%)"
   # $            : End of line
   # \1|\2        : Output: captured group 1, a pipe delimiter, captured group 2
-  done < <(sed -E 's/^\[.*\] (.*): ([0-9]+ \([0-9.]+%\))$/\1|\2/' "$LOG_FILE")
+  done < <(tail -2000 "$LOG_FILE" | sed -E 's/^\[.*\] (.*): ([0-9]+ \([0-9.]+%\))$/\1|\2/')
 
   # --- Prepare data for sorting ---
   sortable_output=""
